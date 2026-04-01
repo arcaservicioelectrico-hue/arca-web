@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cotizador ARCA ⚡ PRO</title>
+
+<style>
+body{
+  font-family: Arial;
+  display: flex;
+  gap: 30px;
+  padding: 20px;
+  background: #0f172a;
+  color: white;
+}
+
+.panel{
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 10px;
+  width: 50%;
+}
+
+select, input, button{
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 5px;
+  border: none;
+}
+
+button{
+  background: #22c55e;
+  color: white;
+  cursor: pointer;
+}
+
+.btn-mano{
+  background: #3b82f6;
+}
+
+.lista{
+  background: #020617;
+  padding: 10px;
+  border-radius: 5px;
+  min-height: 200px;
+}
+
+.item{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #334155;
+  padding-bottom: 5px;
+}
+
+.total{
+  margin-top: 15px;
+  font-size: 18px;
+}
+
+.total-final{
+  font-size: 22px;
+  color: #22c55e;
+  margin-top: 10px;
+}
+
+/* BOTÓN ELIMINAR PEQUEÑO */
+.btn-eliminar{
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 2px 6px;
+  font-size: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.btn-eliminar:hover{
+  background: #dc2626;
+}
+</style>
+</head>
+
+<body>
+
+<!-- PANEL IZQUIERDO -->
+<div class="panel">
+  <h2>Agregar servicio ⚡</h2>
+
+  <label>Categoría:</label>
+  <select id="categoria" onchange="cargarSubcategorias()">
+    <option value="">Selecciona</option>
+    <option value="conductos">Conductos</option>
+    <option value="apagadores">Apagadores</option>
+    <option value="conexiones">Conexiones especiales</option>
+    <option value="diagnostico">Diagnóstico</option>
+  </select>
+
+  <label>Servicio:</label>
+  <select id="subcategoria"></select>
+
+  <label>Cantidad:</label>
+  <input type="number" id="cantidad" value="1" min="1">
+
+  <button onclick="agregarServicio()">➕ Agregar</button>
+  <button class="btn-mano" onclick="agregarServicio(true)">⚡ Solo mano de obra</button>
+</div>
+
+<!-- PANEL DERECHO -->
+<div class="panel">
+  <h2>Cotización 💰</h2>
+
+  <div id="lista" class="lista"></div>
+
+  <div class="total">Materiales: $<span id="mat">0</span></div>
+  <div class="total">Mano de obra: $<span id="mo">0</span></div>
+  <div class="total-final">Total: $<span id="total">0</span> MXN</div>
+</div>
+
+<script>
+// BASE DE DATOS
+const servicios = {
+  conductos: [
+    {nombre: "Charola", precio: 120, mano: 40},
+    {nombre: "Tubería pared delgada", precio: 80, mano: 30},
+    {nombre: "Tubería pared gruesa", precio: 150, mano: 50},
+    {nombre: "Canaleta", precio: 60, mano: 25},
+    {nombre: "Tubo corrugado", precio: 50, mano: 20}
+  ],
+  apagadores: [
+    {nombre: "Sencillo", precio: 90, mano: 40},
+    {nombre: "Escalera", precio: 150, mano: 60}
+  ],
+  conexiones: [
+    {nombre: "Acometida 110V", precio: 800, mano: 300},
+    {nombre: "Acometida 220V 2F", precio: 1200, mano: 400},
+    {nombre: "Acometida 220V 3F", precio: 1800, mano: 600},
+    {nombre: "Tablero principal", precio: 2500, mano: 800},
+    {nombre: "Contacto 220V", precio: 300, mano: 100},
+    {nombre: "Aire acondicionado", precio: 900, mano: 350},
+    {nombre: "Estufa", precio: 700, mano: 250},
+    {nombre: "Regadera eléctrica", precio: 600, mano: 200}
+  ],
+  diagnostico: [
+    {nombre: "Corto circuito", precio: 400, mano: 150},
+    {nombre: "Termografía infrarroja", precio: 1500, mano: 500},
+    {nombre: "Equilibrio de cargas", precio: 1200, mano: 400}
+  ]
+};
+
+let totalMateriales = 0;
+let totalMano = 0;
+
+// CARGAR SUBCATEGORIAS
+function cargarSubcategorias(){
+  let categoria = document.getElementById("categoria").value;
+  let sub = document.getElementById("subcategoria");
+
+  sub.innerHTML = "";
+
+  servicios[categoria].forEach((servicio, index) => {
+    let option = document.createElement("option");
+    option.value = index;
+    option.text = servicio.nombre + " ($" + servicio.precio + ")";
+    sub.appendChild(option);
+  });
+}
+
+// AGREGAR SERVICIO
+function agregarServicio(soloMano = false){
+  let categoria = document.getElementById("categoria").value;
+  let sub = document.getElementById("subcategoria");
+  let cantidad = parseInt(document.getElementById("cantidad").value);
+
+  let servicio = servicios[categoria][sub.value];
+
+  let subtotalMat = soloMano ? 0 : servicio.precio * cantidad;
+  let subtotalMano = servicio.mano * cantidad;
+
+  totalMateriales += subtotalMat;
+  totalMano += subtotalMano;
+
+  let lista = document.getElementById("lista");
+
+  let div = document.createElement("div");
+  div.classList.add("item");
+
+  let tipo = soloMano ? " (Mano de obra)" : "";
+
+  div.innerHTML = `
+    <span>${servicio.nombre}${tipo} x${cantidad}</span>
+    <span>$${subtotalMat + subtotalMano}</span>
+    <button class="btn-eliminar" onclick="eliminar(this, ${subtotalMat}, ${subtotalMano})">✕</button>
+  `;
+
+  lista.appendChild(div);
+
+  actualizarTotales();
+}
+
+// ELIMINAR
+function eliminar(btn, mat, mano){
+  btn.parentElement.remove();
+
+  totalMateriales -= mat;
+  totalMano -= mano;
+
+  actualizarTotales();
+}
+
+// ACTUALIZAR TOTALES
+function actualizarTotales(){
+  document.getElementById("mat").innerText = totalMateriales;
+  document.getElementById("mo").innerText = totalMano;
+  document.getElementById("total").innerText = totalMateriales + totalMano;
+}
+</script>
+
+</body>
+</html>
