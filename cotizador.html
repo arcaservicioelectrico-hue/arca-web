@@ -95,6 +95,7 @@ button{
     <option value="">Selecciona</option>
     <option value="conductos">Conductos</option>
     <option value="apagadores">Apagadores</option>
+     <option value="contactos">Contactos</option> <!--linea nueva-->
     <option value="conexiones">Conexiones especiales</option>
     <option value="diagnostico">Diagnóstico</option>
   </select>
@@ -134,20 +135,27 @@ const servicios = {
     {nombre: "Sencillo", precio: 90, mano: 40},
     {nombre: "Escalera", precio: 150, mano: 60}
   ],
+    //linea nueva
+  contactos: [
+    {nombre: "Sencillo", precio: 90, mano: 100},
+    {nombre: "Doble", precio: 150, mano: 120}
+  ], //fin de line
   conexiones: [
-    {nombre: "Acometida 110V", precio: 800, mano: 300},
-    {nombre: "Acometida 220V 2F", precio: 1200, mano: 400},
-    {nombre: "Acometida 220V 3F", precio: 1800, mano: 600},
-    {nombre: "Tablero principal", precio: 2500, mano: 800},
-    {nombre: "Contacto 220V", precio: 300, mano: 100},
-    {nombre: "Aire acondicionado", precio: 900, mano: 350},
-    {nombre: "Estufa", precio: 700, mano: 250},
-    {nombre: "Regadera eléctrica", precio: 600, mano: 200}
+    {nombre: "Acometida 110V", precio: 800, mano: 850},
+    {nombre: "Acometida 220V 2F", precio: 1200, mano: 1000},
+    {nombre: "Acometida 220V 3F", precio: 1800, mano: 1200},
+    {nombre: "Tablero principal", precio: 2500, mano: 850},
+    {nombre: "Contacto 220V", precio: 300, mano: 150},
+    {nombre: "Bomba de agua c/s flotador", precio: 800, mano: 550},
+    {nombre: "Aire acondicionado", precio: 900, mano: 850},
+    {nombre: "Estufa", precio: 700, mano: 850},
+    {nombre: "Regadera eléctrica", precio: 600, mano: 1000}
   ],
   diagnostico: [
-    {nombre: "Corto circuito", precio: 400, mano: 150},
-    {nombre: "Termografía infrarroja", precio: 1500, mano: 500},
-    {nombre: "Equilibrio de cargas", precio: 1200, mano: 400}
+    {nombre: "Prueba de resistencia de aislante", precio: 1, mano: 850}, //linea nueva
+    {nombre: "Corto circuito", precio: 1, mano: 550},
+    {nombre: "Termografía infrarroja", precio: 1500, mano: 1500},
+    {nombre: "Equilibrio de cargas", precio: 1200, mano: 1800}
   ]
 };
 
@@ -164,7 +172,7 @@ function cargarSubcategorias(){
   servicios[categoria].forEach((servicio, index) => {
     let option = document.createElement("option");
     option.value = index;
-    option.text = servicio.nombre + " ($" + servicio.precio + ")";
+    option.text = servicio.nombre; // + " ($" + servicio.precio + ")";
     sub.appendChild(option);
   });
 }
