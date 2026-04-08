@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>ARCA | Calculadora Profesional</title>
+
+<style>
+body {
+    font-family: Arial;
+    background: #020617;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* CONTENEDOR */
+.container {
+    background: #0f172a;
+    padding: 30px;
+    border-radius: 15px;
+    width: 380px;
+}
+
+h1 {
+    text-align: center;
+    color: #22c55e;
+}
+
+/* INPUTS */
+input, select, button {
+    width: 100%;
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+}
+
+button {
+    background: #22c55e;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+/* RESULTADO */
+.resultado {
+    margin-top: 20px;
+    background: #020617;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+/* MODAL */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #0f172a;
+    padding: 20px;
+    width: 95%;
+    max-width: 600px;
+    border-radius: 10px;
+
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.close {
+    align-self: flex-end;
+    font-size: 25px;
+    cursor: pointer;
+}
+
+/* TABLA */
+.tabla-scroll {
+    overflow-y: auto;
+    max-height: 60vh;
+    margin-top: 10px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    border-bottom: 1px solid #334155;
+    padding: 8px;
+    text-align: center;
+}
+
+thead th {
+    position: sticky;
+    top: 0;
+    background: #020617;
+}
+
+/* SCROLL BONITO */
+.tabla-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.tabla-scroll::-webkit-scrollbar-thumb {
+    background: #22c55e;
+    border-radius: 10px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+    <h1>*******************************</h1>
+    <h1>*******************************</h1>
+    <h1>*******************************</h1>
+    <h1>*******************************</h1>
+    <h1>Calculadora de Caída de Voltaje</h1>
+    <h1>ARCA ⚡ Voltaje</h1>
+
+    <label>Tipo de sistema:</label>
+    <select id="fase">
+        <option value="mono">Monofásico</option>
+        <option value="tri">Trifásico</option>
+    </select>
+
+    <label>Material:</label>
+    <select id="material"></select>
+
+    <label>Calibre:</label>
+    <select id="calibre"></select>
+
+    <label>Voltaje (V):</label>
+    <input type="number" id="voltaje">
+
+    <label>Corriente (A):</label>
+    <input type="number" id="corriente">
+
+    <label>Distancia (m):</label>
+    <input type="number" id="distancia">
+
+    <button onclick="calcular()">Calcular</button>
+    <button onclick="recomendar()">Recomendar calibre</button>
+    <button onclick="mostrarTabla()">Ver tabla de amperaje</button>
+
+    <div class="resultado">
+        <p>Caída: <span id="vd">-</span> V</p>
+        <p>Porcentaje: <span id="porcentaje">-</span> %</p>
+        <p>Voltaje final: <span id="vf">-</span> V</p>
+        <p>Estado: <span id="estado">-</span></p>
+        <p>Capacidad: <span id="capacidad">-</span></p>
+        <p>Recomendación: <span id="recomendacion">-</span></p>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="cerrarTabla()">&times;</span>
+        <h2>Tabla de Amperios</h2>
+        <h2>Para tipo RH,THWN,RHW,THW 75°C</h2>
+
+        <div class="tabla-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Calibre</th>
+                        <th>Cobre (A)</th>
+                        <th>Aluminio (A)</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaAmpacidad"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+
+// RESISTENCIA
+const cables = {
+    cobre: {
+        "18": 0.02095, "16": 0.01317, "14": 0.008286,
+        "12": 0.005211, "10": 0.003277, "8": 0.002061,
+        "6": 0.001296, "4": 0.000815, "2": 0.000513,
+        "1": 0.000406, "1/0": 0.000322, "2/0": 0.000255,
+        "3/0": 0.000202, "4/0": 0.000160
+    },
+    aluminio: {
+        "18": 0.03329, "16": 0.02095, "14": 0.01317,
+        "12": 0.008286, "10": 0.005211, "8": 0.003277,
+        "6": 0.002061, "4": 0.001296, "2": 0.000815,
+        "1": 0.000646, "1/0": 0.000513, "2/0": 0.000406,
+        "3/0": 0.000322, "4/0": 0.000255
+    }
+};
+
+// AMPACIDAD
+const ampacidad = [
+    {calibre:"18", cobre:10, aluminio:3},
+    {calibre:"16", cobre:13, aluminio:13},
+    {calibre:"14", cobre:20, aluminio:15},
+    {calibre:"12", cobre:25, aluminio:20},
+    {calibre:"10", cobre:35, aluminio:25},
+    {calibre:"8", cobre:50, aluminio:40},
+    {calibre:"6", cobre:65, aluminio:50},
+    {calibre:"4", cobre:85, aluminio:65},
+    {calibre:"3", cobre:100, aluminio:75},
+    {calibre:"2", cobre:115, aluminio:90},
+    {calibre:"1", cobre:130, aluminio:100},
+    {calibre:"1/0", cobre:150, aluminio:120},
+    {calibre:"2/0", cobre:175, aluminio:135},
+    {calibre:"3/0", cobre:200, aluminio:155},
+    {calibre:"4/0", cobre:230, aluminio:180}
+];
+
+// INIT
+function init() {
+    let mat = document.getElementById("material");
+    ["cobre","aluminio"].forEach(m=>{
+        let op=document.createElement("option");
+        op.value=m;
+        op.text=m.toUpperCase();
+        mat.appendChild(op);
+    });
+    cargarCalibres();
+}
+window.onload = init;
+
+document.getElementById("material").addEventListener("change", cargarCalibres);
+
+function cargarCalibres(){
+    let material = document.getElementById("material").value;
+    let select = document.getElementById("calibre");
+    select.innerHTML="";
+    Object.keys(cables[material]).reverse().forEach(c=>{
+        let op=document.createElement("option");
+        op.value=c;
+        op.text = c.includes("/") ? c+" AWG" : "AWG "+c;
+        select.appendChild(op);
+    });
+}
+
+// CALCULO
+function calcular(){
+    let fase = document.getElementById("fase").value;
+    let material = document.getElementById("material").value;
+    let calibre = document.getElementById("calibre").value;
+
+    let V = parseFloat(document.getElementById("voltaje").value);
+    let I = parseFloat(document.getElementById("corriente").value);
+    let L = parseFloat(document.getElementById("distancia").value);
+
+    let R = cables[material][calibre];
+
+    let vd = (fase==="mono") ? 2*L*I*R : Math.sqrt(3)*L*I*R;
+    let porcentaje = (vd/V)*100;
+    let vf = V - vd;
+
+    let estado = (porcentaje<=3) ? "✔ ÓPTIMO" :
+                 (porcentaje<=5) ? "⚠ ACEPTABLE" :
+                 "✖ ALTO";
+
+    let dato = ampacidad.find(a=>a.calibre===calibre);
+    let limite = dato[material];
+
+    let capacidad = (I<=limite)
+        ? "✔ Soporta corriente"
+        : "✖ NO soporta";
+
+    document.getElementById("vd").innerText = vd.toFixed(2);
+    document.getElementById("porcentaje").innerText = porcentaje.toFixed(2);
+    document.getElementById("vf").innerText = vf.toFixed(2);
+    document.getElementById("estado").innerText = estado;
+    document.getElementById("capacidad").innerText = capacidad;
+}
+
+// TABLA
+function mostrarTabla(){
+    let tabla=document.getElementById("tablaAmpacidad");
+    tabla.innerHTML="";
+    ampacidad.forEach(i=>{
+        tabla.innerHTML+=`
+        <tr>
+            <td>${i.calibre}</td>
+            <td>${i.cobre} A</td>
+            <td>${i.aluminio} A</td>
+        </tr>`;
+    });
+    document.getElementById("modal").classList.add("active");
+}
+
+function cerrarTabla(){
+    document.getElementById("modal").classList.remove("active");
+}
+//recomendacion
+
+function recomendar(){
+
+    let fase = document.getElementById("fase").value;
+    let material = document.getElementById("material").value;
+
+    let V = parseFloat(document.getElementById("voltaje").value);
+    let I = parseFloat(document.getElementById("corriente").value);
+    let L = parseFloat(document.getElementById("distancia").value);
+
+    let calibresOrdenados = [
+        "14","12","10","8","6","4","3","2","1",
+        "1/0","2/0","3/0","4/0"
+    ];
+
+    let recomendacion = null;
+
+    for (let i = 0; i < calibresOrdenados.length; i++) {
+
+        let calibre = calibresOrdenados[i];
+
+        // evitar calibres que no existen en tu tabla
+        if(!cables[material][calibre]) continue;
+
+        // 🔹 AMPACIDAD
+        let dato = ampacidad.find(a => a.calibre === calibre);
+        if(!dato) continue;
+
+        let limite = dato[material];
+
+        if(I > limite) continue;
+
+        // 🔹 CAÍDA
+        let R = cables[material][calibre];
+
+        let vd = (fase==="mono") ? 2*L*I*R : Math.sqrt(3)*L*I*R;
+        let porcentaje = (vd/V)*100;
+
+        if(porcentaje <= 3){
+            recomendacion = calibre;
+            break;
+        }
+    }
+
+    let resultado = document.getElementById("recomendacion");
+
+    if(recomendacion){
+        resultado.innerText = "✔ Calibre mínimo recomendado: " + recomendacion + " AWG";
+    } else {
+        resultado.innerText = "⚠ Ningún calibre cumple (subir calibre o voltaje)";
+    }
+}
+
+</script>
+
+</body>
+</html>
